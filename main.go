@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/appleboy/go-fcm"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,11 +15,21 @@ import (
 
 func main() {
 
+	// debug
 	const (
 		host     = "localhost"
 		port     = 5432
 		user     = "nomeet"
 		password = "nomeet"
+		dbname   = "coronavirus"
+	)
+
+	// release
+	const (
+		host     = "localhost"
+		port     = 5432
+		user     = "postgres"
+		password = "postgres"
 		dbname   = "coronavirus"
 	)
 
@@ -32,6 +44,11 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
+	}
+
+	client, err := fcm.NewClient("AAAAY5aoA3U:APA91bGo_vKVUguG0wIqysIZq7kHC1Fu1AbwzNJzS2uv0TkACLGAFKTb8USCFX8bS91U9HRM06TC7eylS8hFbTdxVT1zZQVwVn2FTCU3IunD4YZ9wpOLQa0eXbVzizXGQv5-LZrh7F-I")
+	if err != nil {
+		log.Fatalln(err)
 	}
 
 	fmt.Println("connected to postgres")
@@ -100,7 +117,8 @@ func main() {
 				"id" : id,
 				"title" : title,
 				"url" : url,
-				"date" : date.Format("02-Jan-2006 15:04:05"),
+				//"date" : date.Format("02-Jan-2006 15:04:05"),
+				"date" : date.Format("Jan 02, 15:04 EST") + date.Location().String(),
 			}
 		}
 
@@ -108,6 +126,34 @@ func main() {
 			"success" : true,
 			"results" : results,
 		})
+	})
+
+	r.POST("/sendNotif", func(c *gin.Context) {
+		if c.PostForm("password") != "juanisdumb" {
+			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte("wrong password"))
+			return
+		}
+		msg := &fcm.Message{
+			Notification: &fcm.Notification{
+				Title: c.PostForm("title"),
+				Body: c.PostForm("description"),
+			},
+			Condition: "'" + c.PostForm("topic") + "' in Topics",
+			Data: map[string]interface{}{
+				"message": "yes",
+			},
+		}
+
+		// Send the message and receive the response without retries.
+		response, err := client.Send(msg)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		log.Printf("%#v\n", response)
+
+		c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte("success"))
+		return
 	})
 
 	r.Run()
