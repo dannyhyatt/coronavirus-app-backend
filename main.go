@@ -25,13 +25,13 @@ func main() {
 	)
 
 	// release
-	const (
-		host     = "localhost"
-		port     = 5432
-		user     = "postgres"
-		password = "postgres"
-		dbname   = "coronavirus"
-	)
+	//const (
+	//	host     = "localhost"
+	//	port     = 5432
+	//	user     = "postgres"
+	//	password = "postgres"
+	//	dbname   = "coronavirus"
+	//)
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
@@ -156,5 +156,5 @@ func main() {
 		return
 	})
 
-	r.Run()
+	r.RunTLS(":443", "key/domain-crt.txt", "key/account-key.txt")
 }
